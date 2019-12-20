@@ -33,7 +33,7 @@ public class  FlinkLauncher {
         //设置并行度，默认为当前机器cpu核心数
         env.setParallelism(1);
 
-        DataStream<String> textStream = env.socketTextStream("localhost", port, "\n");
+        DataStream<String> textStream = env.socketTextStream("10.13.30.165", port, "\n");
 
         DataStream<Tuple2<String, Long>> inputMap = textStream.map(new MapFunction<String, Tuple2<String, Long>>() {
             @Override
@@ -79,7 +79,7 @@ public class  FlinkLauncher {
                         iterable.forEach(t -> arrarList.add(t.f1));
                         Collections.sort(arrarList);
                         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-                        String result = "\n 键值:" + key + "\n 触发窗内数据个数 : " + arrarList.size()
+                        String result = "\n 键值:" + key + "\n触发窗内数据个数 : " + arrarList.size()
                                 + "\n触发窗起始数据:" + sdf.format(arrarList.get(0))
                                 + "\n触发窗最后（可能是延时）数据:" + sdf.format(arrarList.get(arrarList.size() - 1))
                                 + "\n实际窗起始和结束时间:" + sdf.format(timeWindow.getStart()) + "《----》" + sdf.format(timeWindow.getEnd()) + "\n";
