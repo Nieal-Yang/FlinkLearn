@@ -1,6 +1,7 @@
 package com.edayqe.learn.flink.inputformat;
 
 import com.edayqe.learn.flink.entity.DataSource;
+import org.apache.flink.api.common.io.DefaultInputSplitAssigner;
 import org.apache.flink.api.common.io.RichInputFormat;
 import org.apache.flink.api.common.io.statistics.BaseStatistics;
 import org.apache.flink.configuration.Configuration;
@@ -11,6 +12,7 @@ import org.apache.flink.types.Row;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MysqlRichInputFormat extends RichInputFormat<Row, InputSplit> {
@@ -25,26 +27,7 @@ public class MysqlRichInputFormat extends RichInputFormat<Row, InputSplit> {
 
     protected transient Statement currentStatement;
 
-    public MysqlRichInputFormat() {
-        resultSetType = ResultSet.TYPE_FORWARD_ONLY;
-        resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
-    }
-
-    public List<DataSource> getSourceList() {
-        return sourceList;
-    }
-
-    public void setSourceList(List<DataSource> sourceList) {
-        this.sourceList = sourceList;
-    }
-
-    public int getNumPartitions() {
-        return numPartitions;
-    }
-
-    public void setNumPartitions(int numPartitions) {
-        this.numPartitions = numPartitions;
-    }
+    protected transient ResultSet currentResultSet;
 
     @Override
     public void configure(Configuration configuration) {
@@ -57,15 +40,22 @@ public class MysqlRichInputFormat extends RichInputFormat<Row, InputSplit> {
     }
 
     @Override
-    public InputSplit[] createInputSplits(int i) throws IOException {
+    public InputSplit[] createInputSplits(int min) throws IOException {
         MysqlInputSplit[] inputSplits = new MysqlInputSplit[numPartitions];
-
+        int sourceSize = sourceList == null ? 0 : sourceList.size();
+        for (int i = 0; i < sourceSize; i++) {
+            int inplitIndex = i % numPartitions;
+            List<DataSource> curSourceList = inputSplits[inplitIndex].getSourceList();
+            if (curSourceList == null) curSourceList = new ArrayList<>();
+            curSourceList.add(sourceList.get(i));
+            inputSplits[inplitIndex].setSourceList(curSourceList);
+        }
         return inputSplits;
     }
 
     @Override
     public InputSplitAssigner getInputSplitAssigner(InputSplit[] inputSplits) {
-        return null;
+        return new DefaultInputSplitAssigner(inputSplits);
     }
 
     @Override
